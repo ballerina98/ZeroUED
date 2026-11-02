@@ -1,0 +1,21 @@
+# V0 with KAN trained as AE: the old protocol (the test includes the training signals), the old AE settings.
+name: manysig_v0_kan_ae
+equalized: true
+receivers: ["1-1"]
+split: v0
+norm: max_abs
+feature_learner: kan
+ml_approach: ae
+n_features: 20
+grid_size: 10
+spline_order: 4            # encoder (the paper's value)
+decoder_spline_order: 3    # decoder (the old code's default; not in the paper)
+n_epochs: 100
+eval_every: 10             # score the test set every 10 epochs (only written down, never used in training)
+batch_size: 50
+lr: 0.001
+noise_std: 0.1
+device: cpu
+n_clusters: 80
+threshold: 0.95
+seed: 0

@@ -1,0 +1,1 @@
+"""Data modality: X = transform(windows). Never sees labels."""
