@@ -1,0 +1,1 @@
+"""Detection: fit(Z_train), score(Z_test). K-means + thresholding."""
