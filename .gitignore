@@ -234,3 +234,4 @@ results/
 *.pt
 *.pth
 *.zip
+.vscode/

@@ -1,0 +1,22 @@
+# V0 with KAN trained as CL: the old protocol (the test includes the training signals), the old CL settings.
+# As the old code: head 20 -> 20 -> 20, temperature 1.
+name: manysig_v0_kan_cl
+equalized: true
+receivers: ["1-1"]
+split: v0
+norm: max_abs
+feature_learner: kan
+ml_approach: cl
+n_features: 20
+grid_size: 10
+spline_order: 4
+n_epochs: 100
+eval_every: 10             # score the test set every 10 epochs (only written down, never used in training)
+batch_size: 128            # old CL config
+lr: 0.0001                 # old CL config
+temperature: 1.0           # old default (the old config did not set it)
+aug_std: 0.05              # old augmentation strength
+device: cpu
+n_clusters: 80
+threshold: 0.95
+seed: 0
