@@ -1,0 +1,12 @@
+# V1: as V0, but with the paper's 80/20 split (no leak). The only change: split.
+name: manysig_v1_pca_512
+equalized: true
+receivers: ["1-1"]
+split: v1
+norm: max_abs
+feature_learner: pca
+ml_approach: none
+n_features: 512
+n_clusters: 80
+threshold: 0.95
+seed: 0

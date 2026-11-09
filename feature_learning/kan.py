@@ -22,6 +22,7 @@ class KANLinear(torch.nn.Module):
         grid_size=5,
         spline_order=3,
         scale_noise=0.1,
+        
         scale_base=1.0,
         scale_spline=1.0,
         enable_standalone_scale_spline=True,
@@ -35,6 +36,8 @@ class KANLinear(torch.nn.Module):
         self.grid_size = grid_size
         self.spline_order = spline_order
 
+# MY COMM: The knots + 4 additional ones, so that it adds up to -1 and 1
+
         h = (grid_range[1] - grid_range[0]) / grid_size
         grid = (
             (
@@ -46,6 +49,8 @@ class KANLinear(torch.nn.Module):
         )
         self.register_buffer("grid", grid)
 
+# MY COMM: The learnable numbers - weight, spline weight, scaler
+
         self.base_weight = torch.nn.Parameter(
             torch.Tensor(out_features, in_features))
         self.spline_weight = torch.nn.Parameter(
@@ -55,6 +60,8 @@ class KANLinear(torch.nn.Module):
             self.spline_scaler = torch.nn.Parameter(
                 torch.Tensor(out_features, in_features)
             )
+
+# MY COMM: remaining settings
 
         self.scale_noise = scale_noise
         self.scale_base = scale_base
@@ -89,6 +96,11 @@ class KANLinear(torch.nn.Module):
                 # torch.nn.init.constant_(self.spline_scaler, self.scale_spline)
                 torch.nn.init.kaiming_uniform_(
                     self.spline_scaler, a=math.sqrt(5) * self.scale_spline)
+
+# MY COMM: b_splines - the shapes at every input number - so for every input numberl 
+# check the input -> take the knots -> add axis -> for each of the 18 intervals between knots, 1 if x lies in it, 0 othervise
+# Rounds 1 to 4 - each new shape is built from two neighb.shapes of the round beforel every round has one shape fwer and is one degree smoother
+# Check the results is 50 512 14 and return it
 
     def b_splines(self, x: torch.Tensor):
         """
@@ -125,6 +137,11 @@ class KANLinear(torch.nn.Module):
         )
         return bases.contiguous()
 
+# MY COMM: From points to coefficients; 
+# What happens: the reverse of evaluating a curve - given points, find the 14 coeff whose spline goes through them
+# It is run only when the layer is created...  with n = 11 points. With 14 coefficients and only 11 points there are many exact solutions; 
+# lstsq returns the one with the smallest coefficients. update_grid would also use it, but it is never called.
+
     def curve2coeff(self, x: torch.Tensor, y: torch.Tensor):
         """
         Compute the coefficients of the curve that interpolates the given points.
@@ -157,6 +174,9 @@ class KANLinear(torch.nn.Module):
         )
         return result.contiguous()
 
+# Multiplies every curve's 14 coeff by its own scale; the result is s*ck, what each curve actually uses
+# property means it's computed fresh every time it is read, so the gradient reaches both c ans s
+
     @property
     def scaled_spline_weight(self):
         return self.spline_weight * (
@@ -164,6 +184,13 @@ class KANLinear(torch.nn.Module):
             if self.enable_standalone_scale_spline
             else 1.0
         )
+
+# What the layer computes on the batch -- check the last size, remember the shape and flatten to 50, 512
+# SiLU part - SiLU on all 50x512 numbers;
+# The spline part
+# SiLU part + spline part
+# feature j = sum of SiLU on 512inputs + sum of spline on 512 with one sum on 14 intervals of the b_splines
+
 
     def forward(self, x: torch.Tensor):
         assert x.size(-1) == self.in_features
@@ -179,6 +206,13 @@ class KANLinear(torch.nn.Module):
 
         output = output.view(*original_shape[:-1], self.out_features)
         return output
+
+# MY COMM: update_grid - never called (not here, not in the old ZeroUED code)
+# Why it exists: the KAN paper updates the grid during training, so the inputs never fall outside the knots.
+# Since it is never called, our knots never move: -1.8 ... 1.8 in the encoder.
+# That is fine for the encoder: its inputs are in [-1, 1].
+# The decoder's inputs are the 20 features, which can go beyond ±1.6 (its outermost knots, order 3);
+# there its splines are zero and only SiLU is left.
 
     @torch.no_grad()
     def update_grid(self, x: torch.Tensor, margin=0.01):
@@ -235,6 +269,12 @@ class KANLinear(torch.nn.Module):
         self.spline_weight.data.copy_(
             self.curve2coeff(x, unreduced_spline_output))
 
+# MY COMM: regularization_loss - never called (not here, not in the old ZeroUED code)
+# The KAN paper adds a penalty to the loss that pushes most curves towards zero, so the trained network
+# is sparse and easier to read. The exact penalty needs every curve's output, which efficient-kan never
+# stores, so it approximates it from the spline coefficients.
+# If it were used: loss = task loss + lambda * regularization_loss(). We don't use it.
+
     def regularization_loss(self, regularize_activation=1.0, regularize_entropy=1.0):
         """
         Compute the regularization loss.
@@ -261,6 +301,9 @@ class KANLinear(torch.nn.Module):
 # -----------------------------------------------------------------------------
 # Our part: the encoder (gives the features) and the decoder (used only for AE training).
 # -----------------------------------------------------------------------------
+
+# MY COMM: KAN encoder and its forward - the batches
+
 class KANEncoder(torch.nn.Module):
     """One KAN layer: a signal (2, 256), flattened to in_features numbers, becomes n_features numbers."""
 
@@ -270,6 +313,10 @@ class KANEncoder(torch.nn.Module):
 
     def forward(self, x):                                # torch (B, 2, 256) -> (B, n_features)
         return self.kan(x.reshape(len(x), -1))
+
+# MY COMM: encode: features for whole data sets - swithc to evaluation mode, finds where the encoder's number are (CPU or GPU), so inputs are there
+# PCAEncoder has an encode with the same input and output, so run_experiments.py gets features from PCA and from the KAN in exactly the same way. 
+# It is used at every test check (train and test features) and by DC to make its groups.
 
     @torch.no_grad()
     def encode(self, x, batch_size=1024):

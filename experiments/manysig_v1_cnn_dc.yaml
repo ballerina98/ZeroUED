@@ -1,0 +1,20 @@
+# V1 with CNN trained as DC: as manysig_v1_kan_dc, but with the CNN (the old Simple_CNN_1D).
+# The only change: the feature learner. As the old code: no head, the 20 features are the scores of 20 groups.
+name: manysig_v1_cnn_dc
+equalized: true
+receivers: ["1-1"]
+split: v1
+norm: max_abs
+feature_learner: cnn
+ml_approach: dc
+n_features: 20
+n_groups: 20               # K-means groups for the answers (no head, so it must equal n_features)
+update_every: 20           # new groups every 20 epochs (old code: clusters_update_interval)
+n_epochs: 100
+eval_every: 10             # score the test set every 10 epochs (only written down, never used in training)
+batch_size: 50
+lr: 0.001
+device: cpu
+n_clusters: 80             # the detector's clusters (not the same as n_groups)
+threshold: 0.95
+seed: 0

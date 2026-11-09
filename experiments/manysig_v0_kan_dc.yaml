@@ -1,0 +1,22 @@
+# V0 with KAN trained as DC: the old protocol (the test includes the training signals), the old DC settings.
+# As the old code: no head, the 20 features are the scores of 20 groups.
+name: manysig_v0_kan_dc
+equalized: true
+receivers: ["1-1"]
+split: v0
+norm: max_abs
+feature_learner: kan
+ml_approach: dc
+n_features: 20
+grid_size: 10
+spline_order: 4
+n_groups: 20               # K-means groups for the answers (no head, so it must equal n_features)
+update_every: 20           # new groups every 20 epochs (old code: clusters_update_interval)
+n_epochs: 100
+eval_every: 10             # score the test set every 10 epochs (only written down, never used in training)
+batch_size: 50
+lr: 0.001
+device: cpu
+n_clusters: 80             # the detector's clusters (not the same as n_groups)
+threshold: 0.95
+seed: 0
