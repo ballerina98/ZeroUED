@@ -14,7 +14,7 @@ n_epochs: 100
 eval_every: 10             # score the test set every 10 epochs (only written down, never used in training)
 batch_size: 50
 lr: 0.001
-device: cpu
+device: cuda               # gapi's GPU
 n_clusters: 80             # the detector's clusters (not the same as n_groups)
 threshold: 0.95
 seed: 0

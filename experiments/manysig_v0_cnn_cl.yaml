@@ -1,0 +1,20 @@
+# V0 with CNN trained as CL: as manysig_v0_kan_cl, but with the CNN (the old Simple_CNN_1D).
+# The only change: the feature learner. Same CL settings as the KAN run (the old CNN-CL config could not run).
+name: manysig_v0_cnn_cl
+equalized: true
+receivers: ["1-1"]
+split: v0
+norm: max_abs
+feature_learner: cnn
+ml_approach: cl
+n_features: 20
+n_epochs: 100
+eval_every: 10             # score the test set every 10 epochs (only written down, never used in training)
+batch_size: 128            # old CL config
+lr: 0.0001                 # old CL config
+temperature: 1.0           # old default (the old config did not set it)
+aug_std: 0.05              # old augmentation strength
+device: cuda               # gapi's GPU
+n_clusters: 80
+threshold: 0.95
+seed: 0
